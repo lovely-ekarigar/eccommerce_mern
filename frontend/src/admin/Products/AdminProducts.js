@@ -8,7 +8,7 @@ const AdminProducts = () => {
     name: '',
     description: '',
     price: 0,
-    category: '', // This will store the category _id
+    category: '',
     countInStock: 0,
     image: ''
   });
@@ -16,16 +16,11 @@ const AdminProducts = () => {
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  // Fetch products
   const fetchProducts = async () => {
     try {
       setLoading(true);
       const response = await axios.get('http://localhost:3000/api/v1/products');
-      if (response.data && Array.isArray(response.data)) {
-        setProducts(response.data);
-      } else {
-        setError('No products found.');
-      }
+      setProducts(response.data);
     } catch (error) {
       setError('Error fetching products: Please try again.');
     } finally {
@@ -33,19 +28,12 @@ const AdminProducts = () => {
     }
   };
 
-  // Fetch categories for the dropdown
   const fetchCategories = async () => {
     try {
       setLoading(true);
       const response = await axios.get('http://localhost:3000/api/v1/categories');
-      if (response.data && response.data.data) {
-        setCategories(response.data.data); // Use response.data.data to get the categories
-      } else {
-        setCategories([]);
-        setError('Categories data is not in the expected format.');
-      }
+      setCategories(response.data.data || []);
     } catch (error) {
-      setCategories([]);
       setError('Error fetching categories: Please try again.');
     } finally {
       setLoading(false);
@@ -57,7 +45,6 @@ const AdminProducts = () => {
     fetchCategories();
   }, []);
 
-  // Validate product form
   const validateProduct = (product) => {
     if (!product.name || !product.description || product.price <= 0 || !product.category || product.countInStock < 0) {
       setError('All fields are required, and price must be positive, stock count cannot be negative.');
@@ -66,7 +53,6 @@ const AdminProducts = () => {
     return true;
   };
 
-  // Handle product creation
   const handleCreateProduct = async (event) => {
     event.preventDefault();
     if (!validateProduct(newProduct)) return;
@@ -84,7 +70,11 @@ const AdminProducts = () => {
     }
   };
 
-  // Handle product update
+  const handleEditProduct = (product) => {
+    setNewProduct(product);
+    setIsEditing(true);
+  };
+
   const handleUpdateProduct = async (event) => {
     event.preventDefault();
     if (!validateProduct(newProduct)) return;
@@ -92,7 +82,7 @@ const AdminProducts = () => {
     try {
       setLoading(true);
       const response = await axios.put(`http://localhost:3000/api/v1/products/${newProduct._id}`, newProduct);
-      setProducts(products.map((product) => (product._id === response.data._id ? response.data : product)));
+      setProducts(products.map((p) => (p._id === response.data._id ? response.data : p)));
       setNewProduct({ name: '', description: '', price: 0, category: '', countInStock: 0, image: '' });
       setIsEditing(false);
       setError('');
@@ -103,57 +93,52 @@ const AdminProducts = () => {
     }
   };
 
-  // Handle product deletion
   const handleDeleteProduct = async (id) => {
     try {
-        setLoading(true);
-        const response = await axios.delete(`http://localhost:3000/api/v1/products/${id}`);
-        console.log('Delete Response:', response);  // Log the response for inspection
-        setProducts(products.filter((product) => product._id !== id));
+      setLoading(true);
+      await axios.delete(`http://localhost:3000/api/v1/products/${id}`);
+      setProducts(products.filter((product) => product._id !== id));
     } catch (error) {
-        console.error('Delete Error:', error.response || error);  // Log error details for debugging
-        setError('Error deleting product: Please try again.');
+      setError('Error deleting product: Please try again.');
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-};
-  // Handle product edit (opens a simple edit form)
-  const handleEditProduct = (product) => {
-    setNewProduct(product); // Pre-fill the form with current product data
-    setIsEditing(true); // Set editing state to true
   };
 
+  
   return (
-    <div className="products-management">
-      <h1>Products Management</h1>
-      {error && <div className="error-message">{error}</div>}
+    <div className="w-full p-6 shadow-lg bg-white-200 mx-autorounded-lg ">
+      <h1 className="mb-4 text-2xl font-bold">Products Management</h1>
+      {error && <div className="mb-4 text-red-600">{error}</div>}
       
-      {/* Product Creation or Update Form */}
-      <h2>{isEditing ? 'Edit Product' : 'Create New Product'}</h2>
-      <form onSubmit={isEditing ? handleUpdateProduct : handleCreateProduct}>
+      <form onSubmit={isEditing ? handleUpdateProduct : handleCreateProduct} className="p-4 mb-6 space-y-4 bg-white rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold">{isEditing ? 'Edit Product' : 'Create New Product'}</h2>
         <input 
           type="text" 
           placeholder="Product Name" 
           value={newProduct.name} 
           onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} 
+          className="w-full p-2 border rounded"
         />
         <input 
           type="text" 
           placeholder="Description" 
           value={newProduct.description} 
           onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })} 
+          className="w-full p-2 border rounded"
         />
         <input 
           type="number" 
           placeholder="Price" 
           value={newProduct.price} 
           onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })} 
+          className="w-full p-2 border rounded"
         />
         
-        {/* Category dropdown */}
         <select 
           value={newProduct.category} 
           onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
+          className="w-full p-2 border rounded"
         >
           <option value="">Select Category</option>
           {categories.map((cat) => (
@@ -166,51 +151,57 @@ const AdminProducts = () => {
           placeholder="Count in Stock" 
           value={newProduct.countInStock} 
           onChange={(e) => setNewProduct({ ...newProduct, countInStock: e.target.value })} 
+          className="w-full p-2 border rounded"
         />
         <input 
           type="text" 
           placeholder="Image URL" 
           value={newProduct.image} 
           onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })} 
+          className="w-full p-2 border rounded"
         />
-        <button type="submit" disabled={loading}>{isEditing ? 'Update Product' : 'Create Product'}</button>
+        <button type="submit" disabled={loading} className="px-4 py-2 text-white bg-blue-600 rounded">
+          {isEditing ? 'Update Product' : 'Create Product'}
+        </button>
       </form>
 
-      {/* Product Table */}
       {loading && <div>Loading...</div>}
       {products.length > 0 ? (
-        <table>
-          <thead>
+        <table className="w-full overflow-hidden bg-white rounded-lg shadow-md">
+          <thead className="bg-gray-200">
             <tr>
-              <th>Name</th>
-              <th>Description</th>
-              <th>Price</th>
-              <th>Category</th>
-              <th>Stock</th>
-              <th>Actions</th>
+              <th className="px-4 py-2">Image</th>
+              <th className="px-4 py-2">Name</th>
+              <th className="px-4 py-2">Description</th>
+              <th className="px-4 py-2">Price</th>
+              <th className="px-4 py-2">Category</th>
+              <th className="px-4 py-2">Stock</th>
+              <th className="px-4 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
             {products.map((product) => (
-              <tr key={product._id}>
-                <td>{product.name}</td>
-                <td>{product.description}</td>
-                <td>{product.price}</td>
-                <td>
-                  {/* Display category name */}
+              <tr key={product._id} className="border-b">
+                <td className="px-4 py-2">
+                  <img src={product.image} alt={product.name} className="object-cover w-16 h-16 rounded-md" />
+                </td>
+                <td className="px-4 py-2">{product.name}</td>
+                <td className="px-4 py-2">{product.description}</td>
+                <td className="px-4 py-2">${product.price}</td>
+                <td className="px-4 py-2">
                   {categories.find((cat) => cat._id === product.category)?.name || 'No category assigned'}
                 </td>
-                <td>{product.countInStock}</td>
-                <td>
-                  <button onClick={() => handleEditProduct(product)}>Edit</button>
-                  <button onClick={() => handleDeleteProduct(product._id)}>Delete</button>
+                <td className="px-4 py-2">{product.countInStock}</td>
+                <td className="px-4 py-2">
+                  <button onClick={() => handleEditProduct(product)} className="px-2 py-1 mx-1 text-white bg-yellow-500 rounded">Edit</button>
+                  <button onClick={() => handleDeleteProduct(product._id)} className="px-2 py-1 mx-1 text-white bg-red-500 rounded">Delete</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       ) : (
-        <p>No products found. Please check your API or database.</p>
+        <p className="mt-4 text-gray-500">No products found. Please check your API or database.</p>
       )}
     </div>
   );
